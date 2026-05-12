@@ -14,67 +14,107 @@ function getInitials(name = '') {
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/projects', icon: FolderOpen, label: 'Projects' },
-  { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
-  { to: '/team', icon: Users, label: 'Team' },
-  { to: '/analytics', icon: BarChart2, label: 'Analytics' },
-];
-
-const bottomNavItems = [
-  { to: '/notifications', icon: Bell, label: 'Notifications' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/projects',  icon: FolderOpen,       label: 'Projects'   },
+  { to: '/tasks',     icon: CheckSquare,       label: 'Tasks'      },
+  { to: '/team',      icon: Users,             label: 'Team'       },
+  { to: '/analytics', icon: BarChart2,         label: 'Analytics'  },
 ];
 
 export default function AppLayout() {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { user } = useSelector(s => s.auth);
-  const [search, setSearch] = useState('');
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme-dark') === 'true');
+  const dispatch  = useDispatch();
+  const navigate  = useNavigate();
+  const { user }  = useSelector(s => s.auth);
+  const [search,    setSearch]    = useState('');
+  // Default sidebar to OPEN (false = not collapsed)
+  const [collapsed, setCollapsed] = useState(false);
+  const [darkMode,  setDarkMode]  = useState(
+    () => localStorage.getItem('theme-dark') === 'true'
+  );
 
   useEffect(() => {
-    localStorage.setItem('sidebar-collapsed', String(collapsed));
-  }, [collapsed]);
-
-  useEffect(() => {
-    localStorage.setItem('theme-dark', String(darkMode));
     document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('theme-dark', String(darkMode));
   }, [darkMode]);
 
-  const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
+  const handleLogout = () => { dispatch(logout()); navigate('/login'); };
 
   return (
     <div className="app-shell">
+
       {/* ── Sidebar ── */}
-      <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
+      <aside style={{
+        width:         collapsed ? 68 : 240,
+        minWidth:      collapsed ? 68 : 240,
+        background:    'var(--surface)',
+        borderRight:   '1px solid var(--border)',
+        display:       'flex',
+        flexDirection: 'column',
+        height:        '100vh',
+        overflowY:     'auto',
+        overflowX:     'hidden',
+        transition:    'width .2s ease, min-width .2s ease',
+      }}>
 
         {/* Logo row */}
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-icon"><Rocket size={18} /></div>
-          {!collapsed && <span>Momentum</span>}
+        <div style={{
+          display:     'flex',
+          alignItems:  'center',
+          gap:          10,
+          padding:      '0 14px',
+          minHeight:    60,
+          borderBottom: '1px solid var(--border)',
+        }}>
+          {/* Rocket icon always visible */}
+          <div style={{
+            width: 34, height: 34, background: 'var(--accent)',
+            borderRadius: 10, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', color: 'white', flexShrink: 0,
+          }}>
+            <Rocket size={18} />
+          </div>
+
+          {/* App name — hidden when collapsed */}
+          {!collapsed && (
+            <span style={{
+              fontFamily: 'var(--font-heading)',
+              fontWeight: 700, fontSize: '1.05rem',
+              color: 'var(--text-1)', whiteSpace: 'nowrap',
+            }}>
+              Momentum
+            </span>
+          )}
+
+          {/* Collapse arrow — always at the end */}
           <button
-            className="sidebar-collapse-btn"
             onClick={() => setCollapsed(c => !c)}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            style={{
+              marginLeft:      'auto',
+              width:            26, height: 26,
+              borderRadius:     6,
+              border:          'none',
+              background:      'transparent',
+              color:           'var(--text-3)',
+              display:         'flex',
+              alignItems:      'center',
+              justifyContent:  'center',
+              cursor:          'pointer',
+              flexShrink:       0,
+            }}
           >
             {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
           </button>
         </div>
 
-        <div className="sidebar-divider" />
-
-        {/* Main nav */}
-        <nav className="sidebar-section" style={{ flex: 1 }}>
+        {/* Main nav links */}
+        <nav style={{ flex: 1, padding: '10px 8px' }}>
           {navItems.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
               title={collapsed ? label : undefined}
+              className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+              style={collapsed ? { justifyContent: 'center', padding: '10px 0' } : {}}
             >
               <Icon size={17} />
               {!collapsed && <span>{label}</span>}
@@ -82,33 +122,59 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        <div className="sidebar-divider" />
+        {/* Bottom links */}
+        <div style={{ padding: '8px 8px 0' }}>
+          <div style={{ height: 1, background: 'var(--border)', marginBottom: 8 }} />
 
-        {/* Bottom nav (Notifications, Settings) */}
-        <div className="sidebar-section">
-          {bottomNavItems.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-              title={collapsed ? label : undefined}
-            >
-              <Icon size={17} />
-              {!collapsed && <span>{label}</span>}
-            </NavLink>
-          ))}
+          <NavLink
+            to="/notifications"
+            title={collapsed ? 'Notifications' : undefined}
+            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+            style={collapsed ? { justifyContent: 'center', padding: '10px 0' } : {}}
+          >
+            <Bell size={17} />
+            {!collapsed && <span>Notifications</span>}
+          </NavLink>
+
+          <NavLink
+            to="/settings"
+            title={collapsed ? 'Settings' : undefined}
+            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+            style={collapsed ? { justifyContent: 'center', padding: '10px 0' } : {}}
+          >
+            <Settings size={17} />
+            {!collapsed && <span>Settings</span>}
+          </NavLink>
+
+          {/* Logout button — always visible in sidebar */}
+          <button
+            className="nav-item"
+            onClick={handleLogout}
+            title={collapsed ? 'Logout' : undefined}
+            style={{
+              color: 'var(--accent)',
+              ...(collapsed ? { justifyContent: 'center', padding: '10px 0' } : {}),
+            }}
+          >
+            <LogOut size={17} />
+            {!collapsed && <span>Logout</span>}
+          </button>
         </div>
 
-        {/* User chip — NO logout icon here */}
-        <div className="sidebar-bottom">
-          <div className="user-chip" onClick={() => navigate('/settings')} title="Settings">
+        {/* User chip */}
+        <div style={{ padding: 12, borderTop: '1px solid var(--border)' }}>
+          <div
+            className="user-chip"
+            onClick={() => navigate('/settings')}
+            style={collapsed ? { justifyContent: 'center', background: 'transparent', padding: '8px 0' } : {}}
+          >
             <div className="avatar" style={{ background: 'var(--accent)', flexShrink: 0 }}>
               {getInitials(user?.name || 'U')}
             </div>
             {!collapsed && (
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <div style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user?.name?.split(' ')[0] || 'User'}
+                  {user?.name || 'User'}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 500 }}>
                   {user?.role || 'member'}
@@ -119,7 +185,7 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      {/* ── Main area ── */}
+      {/* ── Main Area ── */}
       <div className="main-area">
         {/* Topbar */}
         <header className="topbar">
@@ -138,35 +204,22 @@ export default function AppLayout() {
             <button
               className="icon-btn"
               onClick={() => setDarkMode(d => !d)}
-              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              title={darkMode ? 'Light mode' : 'Dark mode'}
             >
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            {/* Notifications */}
             <button className="icon-btn" onClick={() => navigate('/notifications')}>
               <Bell size={16} />
             </button>
 
-            {/* Avatar */}
             <div
               className="avatar avatar-lg"
               style={{ cursor: 'pointer' }}
               onClick={() => navigate('/settings')}
-              title="Settings"
             >
               {getInitials(user?.name || 'U')}
             </div>
-
-            {/* Logout — single logout button in topbar */}
-            <button
-              className="icon-btn"
-              onClick={handleLogout}
-              title="Logout"
-              style={{ color: 'var(--accent)' }}
-            >
-              <LogOut size={16} />
-            </button>
           </div>
         </header>
 
