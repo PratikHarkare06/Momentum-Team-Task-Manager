@@ -18,27 +18,33 @@ function SmartMenu({ anchorRef, onClose, children }) {
     const menu = menuRef.current;
     if (!btn || !menu) return;
 
-    const btnRect  = btn.getBoundingClientRect();
-    const menuH    = menu.offsetHeight || 200;
+    const btnRect    = btn.getBoundingClientRect();
+    const menuH      = menu.offsetHeight || 200;
     const spaceBelow = window.innerHeight - btnRect.bottom;
-    const openUp   = spaceBelow < menuH + 8;
+    const openUp     = spaceBelow < menuH + 8;
 
     setStyle({
-      position:   'fixed',
-      left:       btnRect.right,
-      transform:  'translateX(-100%)',
-      top:        openUp ? btnRect.top - menuH - 6 : btnRect.bottom + 6,
-      background: 'var(--surface)',
-      border:     '1px solid var(--border)',
+      position:     'fixed',
+      left:         btnRect.right,
+      transform:    'translateX(-100%)',
+      top:          openUp ? btnRect.top - menuH - 6 : btnRect.bottom + 6,
+      background:   'var(--surface)',
+      border:       '1px solid var(--border)',
       borderRadius: 10,
-      padding:    6,
-      minWidth:   180,
-      boxShadow:  '0 8px 24px rgba(0,0,0,0.2)',
-      zIndex:     9999,
+      padding:      6,
+      minWidth:     180,
+      boxShadow:    '0 8px 24px rgba(0,0,0,0.2)',
+      zIndex:       9999,
     });
 
+    // Use setTimeout so the button's onClick fires BEFORE we close
     const handleOutside = (e) => {
-      if (!btn.contains(e.target) && !menu.contains(e.target)) onClose();
+      setTimeout(() => {
+        if (
+          btn && !btn.contains(e.target) &&
+          menu && !menu.contains(e.target)
+        ) onClose();
+      }, 0);
     };
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
@@ -115,9 +121,29 @@ export default function Tasks() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete task?')) return;
-    try { await dispatch(deleteTask(id)).unwrap(); toast.success('Deleted'); }
-    catch { toast.error('Failed'); }
+    // Use toast confirm instead of window.confirm so it doesn't block the event chain
+    const tid = toast(
+      (t) => (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          Delete this task?
+          <button
+            style={{ background: '#E5484D', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try {
+                await dispatch(deleteTask(id)).unwrap();
+                toast.success('Task deleted');
+              } catch { toast.error('Delete failed'); }
+            }}
+          >Delete</button>
+          <button
+            style={{ background: 'transparent', border: '1px solid #ccc', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+            onClick={() => toast.dismiss(t.id)}
+          >Cancel</button>
+        </span>
+      ),
+      { duration: 8000 }
+    );
   };
 
   const exportCSV = () => {
