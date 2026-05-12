@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import axios from 'axios';
-import { Camera, Mail } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { Camera, Mail, Moon, Sun } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Settings() {
@@ -12,7 +11,15 @@ export default function Settings() {
     email: user?.email || 'alex.rivers@momentum.io',
     jobTitle: 'Senior Project Manager',
   });
-  const [prefs, setPrefs] = useState({ darkMode: false });
+  // Dark mode — synced with the same key AppLayout uses
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme-dark') === 'true');
+
+  const toggleDark = () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    localStorage.setItem('theme-dark', String(next));
+    document.documentElement.classList.toggle('dark', next);
+  };
   const [notifPrefs, setNotifPrefs] = useState({ taskAssigned: true, mentions: true, deadlines: true, weeklyDigest: false });
   const [saving, setSaving] = useState(false);
 
@@ -96,17 +103,18 @@ export default function Settings() {
           <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>App Preferences</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', marginBottom: 20 }}>Customize your workspace experience.</div>
 
-          {[
-            { key: 'darkMode', label: 'Dark Mode', desc: 'Switch between light and dark themes.' },
-          ].map(p => (
-            <div key={p.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
-              <div>
-                <div style={{ fontWeight: 500 }}>{p.label}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>{p.desc}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
+            <div>
+              <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {darkMode ? <Moon size={15} /> : <Sun size={15} />} Dark Mode
               </div>
-              <button className={`toggle ${prefs[p.key] ? 'on' : ''}`} onClick={() => setPrefs({ ...prefs, [p.key]: !prefs[p.key] })} />
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>Switch between light and dark themes.</div>
             </div>
-          ))}
+            <button
+              className={`toggle ${darkMode ? 'on' : ''}`}
+              onClick={toggleDark}
+            />
+          </div>
         </div>
 
         <div className="divider" />
