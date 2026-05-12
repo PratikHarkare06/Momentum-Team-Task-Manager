@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -41,14 +41,22 @@ export default function Dashboard() {
   const [trendData, setTrendData] = useState([]);
 
   useEffect(() => {
-    // Generate chart data
     setTrendData(DAYS.map((d, i) => ({ day: d, tasks: 20 + Math.floor(Math.sin(i * 0.8) * 8 + Math.random() * 10) })));
-    // Fetch recent activity
-    axios.get('/api/tasks?limit=5').then(r => {
-      if (r.data?.tasks) setActivity(r.data.tasks.slice(0, 4));
+    // Fetch real dashboard stats
+    api.get('/dashboard/stats').then(r => {
+      if (r.data?.stats) {
+        const s = r.data.stats;
+        setStats({
+          totalProjects: s.projects?.total ?? 0,
+          activeTasks: s.tasks?.total ?? 0,
+          hoursLogged: s.tasks?.inProgress ?? 0,
+          overdue: s.tasks?.overdue ?? 0,
+        });
+      }
     }).catch(() => {});
-    axios.get('/api/projects/stats').then(r => {
-      if (r.data) setStats(prev => ({ ...prev, ...r.data }));
+    // Fetch recent tasks for activity
+    api.get('/tasks?limit=4').then(r => {
+      if (r.data?.tasks) setActivity(r.data.tasks.slice(0, 4));
     }).catch(() => {});
   }, []);
 

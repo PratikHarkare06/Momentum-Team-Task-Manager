@@ -34,7 +34,7 @@ export default function Tasks() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', project: '', assignee: '' });
+  const [form, setForm] = useState({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', projectId: '', assignee: '' });
   const [creating, setCreating] = useState(false);
   const [menuId, setMenuId] = useState(null);
 
@@ -225,9 +225,9 @@ export default function Tasks() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Project</label>
-                    <select className="form-select" value={form.project} onChange={e => setForm({ ...form, project: e.target.value })}>
+                    <select className="form-select" value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })}>
                       <option value="">Select project</option>
-                      {(projects || []).map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                      {(projects || []).map(p => <option key={p._id} value={p._id}>{p.title || p.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">

@@ -44,7 +44,7 @@ function ProjectCard({ project, onDelete, onOpen }) {
         </div>
       </div>
 
-      <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 6, color: 'var(--text-1)' }}>{project.name}</div>
+      <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 6, color: 'var(--text-1)' }}>{project.name || project.title}</div>
       <div style={{ fontSize: '0.82rem', color: 'var(--text-2)', marginBottom: 16, lineHeight: 1.5, minHeight: 36 }}>
         {project.description || 'No description provided.'}
       </div>
@@ -89,7 +89,7 @@ export default function Projects() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('All Projects');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', priority: 'Medium', deadline: '' });
+  const [form, setForm] = useState({ title: '', description: '', priority: 'Medium', dueDate: '' });
   const [creating, setCreating] = useState(false);
 
   useEffect(() => { dispatch(fetchProjects()); }, [dispatch]);
@@ -109,7 +109,7 @@ export default function Projects() {
       await dispatch(createProject(form)).unwrap();
       toast.success('Project created!');
       setShowModal(false);
-      setForm({ name: '', description: '', priority: 'Medium', deadline: '' });
+      setForm({ title: '', description: '', priority: 'Medium', dueDate: '' });
     } catch (err) { toast.error(err || 'Failed to create project'); }
     finally { setCreating(false); }
   };
@@ -185,7 +185,7 @@ export default function Projects() {
                 <div className="form-group">
                   <label className="form-label">Project Name *</label>
                   <input className="form-input" placeholder="e.g. Mobile App Redesign"
-                    value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                    value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Description</label>
@@ -201,7 +201,7 @@ export default function Projects() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Deadline</label>
-                    <input className="form-input" type="date" value={form.deadline} onChange={e => setForm({ ...form, deadline: e.target.value })} />
+                    <input className="form-input" type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
                   </div>
                 </div>
               </div>
