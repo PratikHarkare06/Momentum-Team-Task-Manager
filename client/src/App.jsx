@@ -73,6 +73,7 @@ export default function App() {
         <AppRoutes />
         <Toaster
           position="top-right"
+          containerStyle={{ top: 60 }}
           toastOptions={{
             style: {
               background: '#FFFFFF',
