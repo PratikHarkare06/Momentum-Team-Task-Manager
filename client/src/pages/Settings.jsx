@@ -12,7 +12,7 @@ export default function Settings() {
     email: user?.email || 'alex.rivers@momentum.io',
     jobTitle: 'Senior Project Manager',
   });
-  const [prefs, setPrefs] = useState({ darkMode: false, compactView: false, language: 'English (US)' });
+  const [prefs, setPrefs] = useState({ darkMode: false });
   const [notifPrefs, setNotifPrefs] = useState({ taskAssigned: true, mentions: true, deadlines: true, weeklyDigest: false });
   const [saving, setSaving] = useState(false);
 
@@ -98,9 +98,8 @@ export default function Settings() {
 
           {[
             { key: 'darkMode', label: 'Dark Mode', desc: 'Switch between light and dark themes.' },
-            { key: 'compactView', label: 'Compact View', desc: 'Show more content with less whitespace.' },
           ].map(p => (
-            <div key={p.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0', borderBottom: '1px solid var(--border)' }}>
+            <div key={p.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0' }}>
               <div>
                 <div style={{ fontWeight: 500 }}>{p.label}</div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>{p.desc}</div>
@@ -108,19 +107,6 @@ export default function Settings() {
               <button className={`toggle ${prefs[p.key] ? 'on' : ''}`} onClick={() => setPrefs({ ...prefs, [p.key]: !prefs[p.key] })} />
             </div>
           ))}
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 14 }}>
-            <div>
-              <div style={{ fontWeight: 500 }}>Language</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>Select your preferred display language.</div>
-            </div>
-            <select className="form-select" style={{ width: 160 }} value={prefs.language} onChange={e => setPrefs({ ...prefs, language: e.target.value })}>
-              <option>English (US)</option>
-              <option>English (UK)</option>
-              <option>Spanish</option>
-              <option>French</option>
-            </select>
-          </div>
         </div>
 
         <div className="divider" />
