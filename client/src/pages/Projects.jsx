@@ -95,7 +95,7 @@ export default function Projects() {
   useEffect(() => { dispatch(fetchProjects()); }, [dispatch]);
 
   const filtered = (projects || []).filter(p => {
-    const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (p.title || p.name || '').toLowerCase().includes(search.toLowerCase());
     if (activeTab === 'Ongoing') return matchSearch && p.status !== 'completed' && p.status !== 'archived';
     if (activeTab === 'Completed') return matchSearch && p.status === 'completed';
     if (activeTab === 'Archived') return matchSearch && p.status === 'archived';
