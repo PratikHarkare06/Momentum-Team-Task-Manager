@@ -6,7 +6,10 @@ const Project = require('../models/Project');
 // @access  Private
 const createTask = async (req, res) => {
   try {
-    const { title, description, assignedTo, projectId, priority, dueDate } = req.body;
+    let { title, description, assignedTo, projectId, priority, dueDate, status } = req.body;
+    
+    if (priority) priority = priority.toLowerCase();
+    if (status) status = status.toLowerCase().replace(' ', '-');
 
     if (!title || !projectId) {
       return res.status(400).json({ success: false, message: 'Title and projectId are required' });
@@ -17,6 +20,7 @@ const createTask = async (req, res) => {
 
     const task = await Task.create({
       title, description, assignedTo, projectId,
+      status: status || 'todo',
       priority: priority || 'medium',
       dueDate,
       createdBy: req.user._id,
@@ -79,7 +83,9 @@ const updateTask = async (req, res) => {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
 
-    const { title, description, assignedTo, status, priority, dueDate } = req.body;
+    let { title, description, assignedTo, status, priority, dueDate } = req.body;
+    if (status) status = status.toLowerCase().replace(' ', '-');
+    if (priority) priority = priority.toLowerCase();
     if (title) task.title = title;
     if (description !== undefined) task.description = description;
     if (assignedTo !== undefined) task.assignedTo = assignedTo;
