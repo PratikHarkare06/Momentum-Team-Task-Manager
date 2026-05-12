@@ -1,9 +1,54 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import ReactDOM from 'react-dom';
 import { fetchTasks, createTask, updateTask, deleteTask } from '../redux/slices/tasksSlice';
 import { fetchProjects } from '../redux/slices/projectsSlice';
-import { Plus, Search, Download, MoreHorizontal, Calendar, Trash2, Edit2, CheckCircle } from 'lucide-react';
+import { Plus, Search, Download, MoreHorizontal, Trash2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+/* ── Smart Portal Menu ───────────────────────────────────────────────────────
+   Renders into document.body. Flips above the button if not enough space below.
+*/
+function SmartMenu({ anchorRef, onClose, children }) {
+  const [style, setStyle] = useState({ visibility: 'hidden' });
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const btn  = anchorRef.current;
+    const menu = menuRef.current;
+    if (!btn || !menu) return;
+
+    const btnRect  = btn.getBoundingClientRect();
+    const menuH    = menu.offsetHeight || 200;
+    const spaceBelow = window.innerHeight - btnRect.bottom;
+    const openUp   = spaceBelow < menuH + 8;
+
+    setStyle({
+      position:   'fixed',
+      left:       btnRect.right,
+      transform:  'translateX(-100%)',
+      top:        openUp ? btnRect.top - menuH - 6 : btnRect.bottom + 6,
+      background: 'var(--surface)',
+      border:     '1px solid var(--border)',
+      borderRadius: 10,
+      padding:    6,
+      minWidth:   180,
+      boxShadow:  '0 8px 24px rgba(0,0,0,0.2)',
+      zIndex:     9999,
+    });
+
+    const handleOutside = (e) => {
+      if (!btn.contains(e.target) && !menu.contains(e.target)) onClose();
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
+
+  return ReactDOM.createPortal(
+    <div ref={menuRef} style={style}>{children}</div>,
+    document.body
+  );
+}
 
 const STATUSES = ['Todo', 'In Progress', 'Completed', 'Blocked'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -36,7 +81,8 @@ export default function Tasks() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', projectId: '', assignee: '' });
   const [creating, setCreating] = useState(false);
-  const [menuId, setMenuId] = useState(null);
+  const [menuId, setMenuId]         = useState(null);
+  const menuBtnRefs                  = useRef({});
 
   useEffect(() => {
     dispatch(fetchTasks());
@@ -170,17 +216,38 @@ export default function Tasks() {
                       {task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                     </td>
                     <td>
-                      <div className="dropdown" style={{ position: 'relative' }}>
-                        <button className="btn btn-ghost btn-sm" style={{ padding: '4px 6px' }} onClick={() => setMenuId(menuId === task._id ? null : task._id)}>
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          ref={el => { menuBtnRefs.current[task._id] = el; }}
+                          className="btn btn-ghost btn-sm"
+                          style={{ padding: '4px 6px' }}
+                          onClick={() => setMenuId(menuId === task._id ? null : task._id)}
+                        >
                           <MoreHorizontal size={15} />
                         </button>
                         {menuId === task._id && (
-                          <div className="dropdown-menu" onClick={() => setMenuId(null)}>
+                          <SmartMenu
+                            anchorRef={{ current: menuBtnRefs.current[task._id] }}
+                            onClose={() => setMenuId(null)}
+                          >
                             {STATUSES.map(s => (
-                              <button key={s} className="dropdown-item" onClick={() => handleStatusChange(task, s)}>→ {s}</button>
+                              <button
+                                key={s}
+                                className="dropdown-item"
+                                onClick={() => { setMenuId(null); handleStatusChange(task, s); }}
+                              >
+                                → {s}
+                              </button>
                             ))}
-                            {isAdmin && <button className="dropdown-item danger" onClick={() => handleDelete(task._id)}><Trash2 size={12} /> Delete</button>}
-                          </div>
+                            {isAdmin && (
+                              <button
+                                className="dropdown-item danger"
+                                onClick={() => { setMenuId(null); handleDelete(task._id); }}
+                              >
+                                <Trash2 size={12} /> Delete
+                              </button>
+                            )}
+                          </SmartMenu>
                         )}
                       </div>
                     </td>
