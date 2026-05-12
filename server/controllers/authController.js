@@ -97,7 +97,7 @@ const getMe = async (req, res) => {
 // @access  Private
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find().select('name email role');
+    const users = await User.find().select('name email role createdAt');
     res.json({ success: true, users });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

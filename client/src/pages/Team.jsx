@@ -25,7 +25,7 @@ export default function Team() {
 
   useEffect(() => {
     axios.get('/api/users').then(r => {
-      if (r.data?.length) setMembers(r.data.map((u, i) => ({
+      if (r.data?.users?.length) setMembers(r.data.users.map((u, i) => ({
         name: u.name || 'User', email: u.email, role: u.role === 'admin' ? 'Admin' : 'Member',
         joined: new Date(u.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
         online: Math.random() > 0.4, tasks: Math.floor(Math.random() * 20 + 1), activity: ['High', 'Normal', 'Low'][i % 3],
