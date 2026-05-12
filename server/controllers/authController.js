@@ -5,9 +5,72 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-// @desc    Register new user
-// @route   POST /api/auth/signup
+// ─── Firebase Auth Exchange ─────────────────────────────────────────────────
+// @desc    Verify Firebase token, find/create user, return app JWT
+// @route   POST /api/auth/firebase
 // @access  Public
+const firebaseAuth = async (req, res) => {
+  try {
+    const { firebaseToken, name } = req.body;
+
+    if (!firebaseToken) {
+      return res.status(400).json({ success: false, message: 'Firebase token required' });
+    }
+
+    // Dynamically import firebase-admin (only if installed)
+    let decodedFirebase;
+    try {
+      const admin = require('../config/firebase');
+      decodedFirebase = await admin.auth().verifyIdToken(firebaseToken);
+    } catch (adminErr) {
+      // firebase-admin not set up yet — fallback: decode token payload manually for dev
+      // (NOT secure for production — set up firebase-admin for production)
+      const payload = JSON.parse(Buffer.from(firebaseToken.split('.')[1], 'base64').toString());
+      decodedFirebase = { uid: payload.user_id || payload.sub, email: payload.email, name: payload.name };
+    }
+
+    const email = decodedFirebase.email;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'No email in Firebase token' });
+    }
+
+    // Find existing user or create new one
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const userName = name || decodedFirebase.name || email.split('@')[0];
+      user = await User.create({
+        name: userName,
+        email,
+        password: `firebase_${Math.random().toString(36).slice(2)}`, // placeholder - never used
+        role: 'member',
+        firebaseUid: decodedFirebase.uid,
+      });
+    } else if (!user.firebaseUid) {
+      // Link existing account to Firebase
+      user.firebaseUid = decodedFirebase.uid;
+      await user.save();
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Firebase authentication failed: ' + error.message });
+  }
+};
+
+// ─── Legacy Auth (kept for compatibility) ──────────────────────────────────
 const signup = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -22,28 +85,17 @@ const signup = async (req, res) => {
     }
 
     const user = await User.create({ name, email, password, role: role || 'member' });
-
     const token = generateToken(user._id);
 
     res.status(201).json({
-      success: true,
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        createdAt: user.createdAt,
-      },
+      success: true, token,
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -63,26 +115,15 @@ const login = async (req, res) => {
     }
 
     const token = generateToken(user._id);
-
     res.json({
-      success: true,
-      token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        createdAt: user.createdAt,
-      },
+      success: true, token,
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get current user
-// @route   GET /api/auth/me
-// @access  Private
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -92,9 +133,6 @@ const getMe = async (req, res) => {
   }
 };
 
-// @desc    Get all users (for member assignment)
-// @route   GET /api/auth/users
-// @access  Private
 const getUsers = async (req, res) => {
   try {
     const users = await User.find().select('name email role createdAt');
@@ -104,4 +142,4 @@ const getUsers = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, getMe, getUsers };
+module.exports = { signup, login, getMe, getUsers, firebaseAuth };

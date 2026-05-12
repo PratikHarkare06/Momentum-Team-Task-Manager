@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { signup } from '../redux/slices/authSlice';
+import { signup, googleLogin } from '../redux/slices/authSlice';
 import { Eye, EyeOff, Mail, Lock, User, Rocket } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -20,6 +20,15 @@ export default function Signup() {
       navigate('/dashboard');
     } catch (err) {
       toast.error(err || 'Signup failed');
+    }
+  };
+
+  const handleGoogle = async () => {
+    try {
+      await dispatch(googleLogin()).unwrap();
+      navigate('/dashboard');
+    } catch (err) {
+      toast.error(err || 'Google sign-in failed');
     }
   };
 
