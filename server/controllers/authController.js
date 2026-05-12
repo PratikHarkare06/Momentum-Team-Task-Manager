@@ -11,7 +11,7 @@ const generateToken = (id) => {
 // @access  Public
 const firebaseAuth = async (req, res) => {
   try {
-    const { firebaseToken, name } = req.body;
+    const { firebaseToken, name, role } = req.body;
 
     if (!firebaseToken) {
       return res.status(400).json({ success: false, message: 'Firebase token required' });
@@ -39,11 +39,12 @@ const firebaseAuth = async (req, res) => {
 
     if (!user) {
       const userName = name || decodedFirebase.name || email.split('@')[0];
+      const validRole = role === 'admin' ? 'admin' : 'member';
       user = await User.create({
         name: userName,
         email,
         password: `firebase_${Math.random().toString(36).slice(2)}`, // placeholder - never used
-        role: 'member',
+        role: validRole,
         firebaseUid: decodedFirebase.uid,
       });
     } else if (!user.firebaseUid) {

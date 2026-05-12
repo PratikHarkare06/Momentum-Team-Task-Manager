@@ -10,19 +10,19 @@ import {
 import api from '../../services/api';
 
 // ─── Helper: exchange Firebase token for app JWT ───────────────────────────
-async function firebaseExchange(firebaseUser, name = '') {
+async function firebaseExchange(firebaseUser, name = '', role = 'member') {
   const firebaseToken = await firebaseUser.getIdToken();
-  const res = await api.post('/auth/firebase', { firebaseToken, name });
+  const res = await api.post('/auth/firebase', { firebaseToken, name, role });
   localStorage.setItem('token', res.data.token);
   return res.data; // { success, token, user }
 }
 
 // ─── Thunks ────────────────────────────────────────────────────────────────
 
-export const signup = createAsyncThunk('auth/signup', async ({ name, email, password }, { rejectWithValue }) => {
+export const signup = createAsyncThunk('auth/signup', async ({ name, email, password, role }, { rejectWithValue }) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
-    return await firebaseExchange(result.user, name);
+    return await firebaseExchange(result.user, name, role);
   } catch (err) {
     return rejectWithValue(
       err.code === 'auth/email-already-in-use' ? 'Email already registered' :
