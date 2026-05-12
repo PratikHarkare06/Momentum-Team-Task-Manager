@@ -37,17 +37,14 @@ function SmartMenu({ anchorRef, onClose, children }) {
       zIndex:       9999,
     });
 
-    // Use setTimeout so the button's onClick fires BEFORE we close
+    // Use capture-phase 'click' so menu item onClick fires before we close
     const handleOutside = (e) => {
-      setTimeout(() => {
-        if (
-          btn && !btn.contains(e.target) &&
-          menu && !menu.contains(e.target)
-        ) onClose();
-      }, 0);
+      const insideBtn  = btn  && btn.contains(e.target);
+      const insideMenu = menu && menu.contains(e.target);
+      if (!insideBtn && !insideMenu) onClose();
     };
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
+    document.addEventListener('click', handleOutside, true);
+    return () => document.removeEventListener('click', handleOutside, true);
   }, []);
 
   return ReactDOM.createPortal(

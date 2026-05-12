@@ -15,38 +15,48 @@ function priorityBadge(p) {
 }
 
 /* ── Portal Dropdown ─────────────────────────────────────────────────────────
-   Renders into document.body so it is NEVER clipped by any overflow:hidden
-   ancestor. Positions itself relative to the trigger button's screen coords. */
+   Renders into document.body so it is NEVER clipped by any overflow:hidden.
+   Keeps refs to BOTH the anchor button AND the menu div so outside-click
+   logic doesn't fire when clicking items inside the menu. */
 function PortalMenu({ anchorRef, onClose, children }) {
+  const menuRef = useRef(null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (anchorRef.current) {
       const rect = anchorRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + 6, left: rect.right });
+      // Flip upward if not enough room below
+      const estimatedH = 100;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow < estimatedH + 8 ? rect.top - estimatedH - 6 : rect.bottom + 6;
+      setPos({ top, left: rect.right });
     }
+
     const handleClose = (e) => {
-      // setTimeout lets the button's onClick fire BEFORE the menu closes
-      setTimeout(() => {
-        if (anchorRef.current && !anchorRef.current.contains(e.target)) onClose();
-      }, 0);
+      // Ignore clicks inside the anchor button OR inside the menu portal itself
+      const insideAnchor = anchorRef.current && anchorRef.current.contains(e.target);
+      const insideMenu   = menuRef.current   && menuRef.current.contains(e.target);
+      if (!insideAnchor && !insideMenu) onClose();
     };
-    document.addEventListener('mousedown', handleClose);
-    return () => document.removeEventListener('mousedown', handleClose);
+
+    // Use 'click' (not 'mousedown') so menu item onClick fires first
+    document.addEventListener('click', handleClose, true);
+    return () => document.removeEventListener('click', handleClose, true);
   }, []);
 
   return ReactDOM.createPortal(
     <div
+      ref={menuRef}
       style={{
         position:     'fixed',
         top:          pos.top,
         left:         pos.left,
-        transform:    'translateX(-100%)',   // right-align to button
+        transform:    'translateX(-100%)',
         background:   'var(--surface)',
         border:       '1px solid var(--border)',
         borderRadius: 10,
         padding:      6,
-        minWidth:     160,
+        minWidth:     170,
         boxShadow:    '0 8px 24px rgba(0,0,0,0.2)',
         zIndex:       9999,
       }}
