@@ -161,9 +161,9 @@ export default function Tasks() {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div className="avatar avatar-sm" style={{ background: COLORS[i % COLORS.length], fontSize: '0.6rem' }}>
-                          {(task.assignee?.name || task.assignee?.email || 'U').slice(0, 2).toUpperCase()}
+                          {(task.assignedTo?.name || task.assignedTo?.email || 'U').slice(0, 2).toUpperCase()}
                         </div>
-                        <span style={{ fontSize: '0.83rem' }}>{task.assignee?.name || 'Unassigned'}</span>
+                        <span style={{ fontSize: '0.83rem' }}>{task.assignedTo?.name || 'Unassigned'}</span>
                       </div>
                     </td>
                     <td className={isOverdue ? 'overdue' : ''} style={{ fontSize: '0.83rem' }}>
@@ -225,7 +225,7 @@ export default function Tasks() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Project</label>
-                    <select className="form-select" value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })}>
+                    <select className="form-select" value={form.projectId} onChange={e => setForm({ ...form, projectId: e.target.value })} required>
                       <option value="">Select project</option>
                       {(projects || []).map(p => <option key={p._id} value={p._id}>{p.title || p.name}</option>)}
                     </select>

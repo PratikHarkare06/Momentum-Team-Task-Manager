@@ -38,14 +38,14 @@ export default function ProjectDetails() {
   }, [dispatch]);
 
   const project = (projects || []).find(p => p._id === id);
-  const projectTasks = (tasks || []).filter(t => t.project === id || t.project?._id === id);
+  const projectTasks = (tasks || []).filter(t => t.projectId === id || t.projectId?._id === id);
   const filtered = projectTasks.filter(t => !search || t.title?.toLowerCase().includes(search.toLowerCase()));
 
   const handleCreate = async (e) => {
     e.preventDefault();
     setCreating(true);
     try {
-      await dispatch(createTask({ ...form, project: id })).unwrap();
+      await dispatch(createTask({ ...form, projectId: id })).unwrap();
       toast.success('Task added!');
       setShowModal(false);
       setForm({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '' });
@@ -121,7 +121,7 @@ export default function ProjectDetails() {
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
                         <div className="overlap-avatars">
                           <div className="avatar avatar-sm" style={{ background: COLORS[idx % COLORS.length], fontSize: '0.6rem' }}>
-                            {(task.assignee?.name || 'ME').slice(0, 2).toUpperCase()}
+                            {(task.assignedTo?.name || 'ME').slice(0, 2).toUpperCase()}
                           </div>
                         </div>
                         {task.dueDate && (
