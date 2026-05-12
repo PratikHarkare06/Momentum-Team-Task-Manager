@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Camera, Mail, Moon, Sun } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 export default function Settings() {
   const { user } = useSelector(s => s.auth);
@@ -27,7 +28,7 @@ export default function Settings() {
     e.preventDefault();
     setSaving(true);
     try {
-      await axios.put('/api/users/profile', { name: `${profile.firstName} ${profile.lastName}` });
+      await api.put('/users/profile', { name: `${profile.firstName} ${profile.lastName}` });
       toast.success('Profile updated!');
     } catch { toast.error('Failed to update profile'); }
     finally { setSaving(false); }

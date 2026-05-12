@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { Plus, Search, MoreHorizontal, Users, Activity, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -24,7 +24,7 @@ export default function Team() {
   const [inviteRole, setInviteRole] = useState('member');
 
   useEffect(() => {
-    axios.get('/api/users').then(r => {
+    api.get('/users').then(r => {
       if (r.data?.users?.length) setMembers(r.data.users.map((u, i) => ({
         name: u.name || 'User', email: u.email, role: u.role === 'admin' ? 'Admin' : 'Member',
         joined: new Date(u.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
