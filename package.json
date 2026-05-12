@@ -6,8 +6,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start": "node server/server.js",
-    "build": "cd server && npm install"
+    "start": "node server/server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
