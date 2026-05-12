@@ -147,7 +147,7 @@ export default function Tasks() {
                 const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'Completed';
                 return (
                   <tr key={task._id}>
-                    <td style={{ color: 'var(--text-3)', fontSize: '0.8rem' }}>T-{101 + i}</td>
+                    <td style={{ color: 'var(--text-3)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>T-{101 + i}</td>
                     <td style={{ fontWeight: 500, maxWidth: 220 }}>
                       <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
                     </td>

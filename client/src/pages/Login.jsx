@@ -34,7 +34,7 @@ export default function Login() {
         </div>
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 16, lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 16, lineHeight: 1.2, fontFamily: 'var(--font-heading)' }}>
             Ship projects faster with Momentum.
           </h1>
           <p style={{ opacity: 0.8, marginBottom: 48, lineHeight: 1.7 }}>
@@ -66,7 +66,7 @@ export default function Login() {
       {/* Right form */}
       <div className="auth-right">
         <div className="auth-form">
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 6 }}>Welcome back</h2>
+          <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 6, fontFamily: 'var(--font-heading)' }}>Welcome back</h2>
           <p style={{ color: 'var(--text-2)', marginBottom: 28 }}>
             New to Momentum? <Link to="/signup" className="link" style={{ fontWeight: 600 }}>Create an account</Link>
           </p>

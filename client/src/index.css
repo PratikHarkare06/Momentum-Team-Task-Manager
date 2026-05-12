@@ -1,7 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Baloo+2:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 :root {
+  --font-body: 'Quicksand', sans-serif;
+  --font-heading: 'Baloo 2', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
   --bg: #FAF9F7;
   --surface: #FFFFFF;
   --border: #E8E5E0;
@@ -25,13 +28,16 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   background: var(--bg);
   color: var(--text-1);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
+
+h1, h2, h3, h4, h5 { font-family: var(--font-heading); }
+code, pre, .mono { font-family: var(--font-mono); }
 
 /* ── Layout ── */
 .app-shell { display: flex; height: 100vh; overflow: hidden; }
@@ -65,7 +71,7 @@ body {
 .sidebar-logo {
   display: flex; align-items: center; gap: 10px;
   padding: 20px 20px 16px;
-  font-size: 1.1rem; font-weight: 700; color: var(--text-1);
+  font-size: 1.1rem; font-weight: 700; color: var(--text-1); font-family: var(--font-heading);
 }
 .sidebar-logo-icon {
   width: 34px; height: 34px; background: var(--accent);
@@ -128,7 +134,7 @@ body {
 .stat-trend { font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 2px; }
 .stat-trend.up { color: var(--success); }
 .stat-trend.down { color: var(--accent); }
-.stat-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+.stat-value { font-size: 2rem; font-weight: 700; line-height: 1; font-family: var(--font-heading); }
 .stat-label { font-size: 0.8rem; color: var(--text-2); }
 
 /* ── Buttons ── */
@@ -137,6 +143,7 @@ body {
   padding: 8px 18px; border-radius: var(--radius-full);
   font-size: 0.875rem; font-weight: 600; cursor: pointer;
   border: none; transition: all .15s; text-decoration: none; white-space: nowrap;
+  font-family: var(--font-body);
 }
 .btn-primary { background: var(--accent); color: white; }
 .btn-primary:hover { background: var(--accent-hover); }
@@ -169,7 +176,7 @@ body {
   width: 100%; padding: 10px 14px;
   border: 1.5px solid var(--border); border-radius: var(--radius-sm);
   background: var(--surface); color: var(--text-1);
-  font-size: 0.875rem; font-family: inherit; outline: none;
+  font-size: 0.875rem; font-family: var(--font-body); outline: none;
   transition: border-color .15s;
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
@@ -244,7 +251,7 @@ body {
   animation: modalIn .2s ease;
 }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
-.modal-title { font-size: 1rem; font-weight: 700; }
+.modal-title { font-size: 1rem; font-weight: 700; font-family: var(--font-heading); }
 .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
 .modal-footer { padding: 0 24px 20px; display: flex; justify-content: flex-end; gap: 10px; }
 
@@ -286,9 +293,9 @@ body {
 
 /* ── Misc ── */
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
-.page-title { font-size: 1.6rem; font-weight: 700; color: var(--text-1); }
+.page-title { font-size: 1.6rem; font-weight: 700; color: var(--text-1); font-family: var(--font-heading); }
 .page-sub { font-size: 0.875rem; color: var(--text-2); margin-top: 4px; }
-.section-title { font-size: 1rem; font-weight: 700; color: var(--text-1); }
+.section-title { font-size: 1rem; font-weight: 700; color: var(--text-1); font-family: var(--font-heading); }
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text-3); }
 .empty-state h3 { font-size: 1rem; font-weight: 600; color: var(--text-2); margin: 12px 0 6px; }
 .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }

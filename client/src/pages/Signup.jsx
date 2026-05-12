@@ -34,7 +34,7 @@ export default function Signup() {
           <span style={{ fontSize: '1.15rem', fontWeight: 700 }}>Momentum</span>
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 16 }}>Start shipping faster today.</h1>
+          <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 16, fontFamily: 'var(--font-heading)' }}>Start shipping faster today.</h1>
           <p style={{ opacity: 0.8, lineHeight: 1.7 }}>
             Join 10,000+ teams who use Momentum to stay aligned, move fast, and deliver results.
           </p>
@@ -56,7 +56,7 @@ export default function Signup() {
       {/* Right form */}
       <div className="auth-right">
         <div className="auth-form">
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 6 }}>Create your account</h2>
+          <h2 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: 6, fontFamily: 'var(--font-heading)' }}>Create your account</h2>
           <p style={{ color: 'var(--text-2)', marginBottom: 28 }}>
             Already have an account? <Link to="/login" className="link" style={{ fontWeight: 600 }}>Sign in</Link>
           </p>
