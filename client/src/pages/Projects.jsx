@@ -26,7 +26,10 @@ function PortalMenu({ anchorRef, onClose, children }) {
       setPos({ top: rect.bottom + 6, left: rect.right });
     }
     const handleClose = (e) => {
-      if (anchorRef.current && !anchorRef.current.contains(e.target)) onClose();
+      // setTimeout lets the button's onClick fire BEFORE the menu closes
+      setTimeout(() => {
+        if (anchorRef.current && !anchorRef.current.contains(e.target)) onClose();
+      }, 0);
     };
     document.addEventListener('mousedown', handleClose);
     return () => document.removeEventListener('mousedown', handleClose);
@@ -187,9 +190,26 @@ export default function Projects() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this project and all its tasks?')) return;
-    try { await dispatch(deleteProject(id)).unwrap(); toast.success('Project deleted'); }
-    catch { toast.error('Failed to delete'); }
+    toast(
+      (t) => (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          Delete project and all its tasks?
+          <button
+            style={{ background: '#E5484D', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}
+            onClick={async () => {
+              toast.dismiss(t.id);
+              try { await dispatch(deleteProject(id)).unwrap(); toast.success('Project deleted'); }
+              catch { toast.error('Failed to delete'); }
+            }}
+          >Delete</button>
+          <button
+            style={{ background: 'transparent', border: '1px solid #ccc', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+            onClick={() => toast.dismiss(t.id)}
+          >Cancel</button>
+        </span>
+      ),
+      { duration: 8000 }
+    );
   };
 
   return (
