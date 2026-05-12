@@ -25,6 +25,17 @@
   --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
 }
 
+html.dark {
+  --bg: #121212;
+  --surface: #1E1E1E;
+  --border: #333333;
+  --text-1: #F3F4F6;
+  --text-2: #9CA3AF;
+  --text-3: #4B5563;
+  --accent-light: rgba(229, 72, 77, 0.15);
+  --yellow: #A16207;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -51,6 +62,30 @@ code, pre, .mono { font-family: var(--font-mono); }
   flex-direction: column;
   height: 100vh;
   overflow-y: auto;
+  transition: width 0.2s ease, min-width 0.2s ease;
+  z-index: 50;
+}
+
+.sidebar.collapsed {
+  width: 70px;
+  min-width: 70px;
+}
+
+.sidebar.collapsed .sidebar-logo span,
+.sidebar.collapsed .nav-item span,
+.sidebar.collapsed .sidebar-bottom .user-chip > div {
+  display: none;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 9px 0;
+}
+
+.sidebar.collapsed .user-chip {
+  justify-content: center;
+  padding: 10px 0;
+  background: transparent;
 }
 
 .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -70,9 +105,25 @@ code, pre, .mono { font-family: var(--font-mono); }
 /* ── Sidebar ── */
 .sidebar-logo {
   display: flex; align-items: center; gap: 10px;
-  padding: 20px 20px 16px;
-  font-size: 1.1rem; font-weight: 700; color: var(--text-1); font-family: var(--font-heading);
+  padding: 16px 14px;
+  font-size: 1.05rem; font-weight: 700; color: var(--text-1); font-family: var(--font-heading);
+  min-height: 60px;
 }
+
+/* Collapse toggle — no bg, no border, just a small arrow */
+.sidebar-collapse-btn {
+  margin-left: auto;
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.sidebar-collapse-btn:hover { background: var(--bg); color: var(--text-1); }
 .sidebar-logo-icon {
   width: 34px; height: 34px; background: var(--accent);
   border-radius: 10px; display: flex; align-items: center; justify-content: center;
@@ -88,6 +139,7 @@ code, pre, .mono { font-family: var(--font-mono); }
   cursor: pointer; transition: all .15s; text-decoration: none;
   border: none; background: none; width: 100%; text-align: left;
 }
+.nav-item span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-item:hover { background: var(--bg); color: var(--text-1); }
 .nav-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
 .nav-item svg { flex-shrink: 0; }
@@ -279,8 +331,9 @@ code, pre, .mono { font-family: var(--font-mono); }
   position: absolute; right: 0; top: calc(100% + 4px);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-sm); padding: 6px; min-width: 160px;
-  box-shadow: var(--shadow-md); z-index: 100;
+  box-shadow: var(--shadow-md); z-index: 1000;
 }
+.dropdown-menu.left { left: 0; right: auto; }
 .dropdown-item {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; border-radius: 6px;
