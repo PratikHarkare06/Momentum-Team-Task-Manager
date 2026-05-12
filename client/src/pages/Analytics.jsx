@@ -34,10 +34,6 @@ export default function Analytics() {
           <div className="page-title">Productivity Analytics</div>
           <div className="page-sub">Deep dive into team performance and project velocity</div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary"><Download size={14} /> Export Report</button>
-          <button className="btn btn-yellow"><Calendar size={14} /> Last 30 Days</button>
-        </div>
       </div>
 
       {/* Stat Cards */}
@@ -121,7 +117,6 @@ export default function Analytics() {
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div className="section-title">Team Activity</div>
-            <button className="btn btn-ghost btn-sm link">See All</button>
           </div>
           {teamActivity.map((a, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16 }}>
