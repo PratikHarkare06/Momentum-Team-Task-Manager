@@ -3,15 +3,21 @@ node_modules/
 client/node_modules/
 server/node_modules/
 
-# Environment variables - NEVER commit these
+# Environment variables - NEVER commit
 .env
 .env.local
 .env.production
+.env.development
 server/.env
+client/.env
 
 # Build output
 client/dist/
 client/build/
+
+# Firebase service account key
+server/config/serviceAccountKey.json
+serviceAccountKey.json
 
 # Logs
 *.log
