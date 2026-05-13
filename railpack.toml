@@ -1,2 +1,2 @@
 [build]
-cmd = "npm cache clean --force && npm install"
+cmd = "rm -rf /root/.npm /root/.cache /app/node_modules package-lock.json && npm install --no-cache"
