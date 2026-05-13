@@ -99,6 +99,6 @@ npm run dev
 
 ## 📸 Application Screenshots
 *(You can add screenshots or GIF links of your application here)*
+<img width="1470" height="832" alt="Screenshot 2026-05-13 at 4 43 45 PM" src="https://github.com/user-attachments/assets/6f860b04-8f9f-4a3e-bfee-3644f8256001" />
 
----
 *Developed for the Full-Stack Web Development Assignment.*
