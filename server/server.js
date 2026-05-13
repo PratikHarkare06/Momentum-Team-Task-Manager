@@ -1,6 +1,10 @@
-// Polyfill Web Crypto API for MongoDB SASL authentication (required on some Node environments)
+// Force Web Crypto API as global — required for MongoDB SASL authentication on Railway/Alpine
 const { webcrypto } = require('crypto');
-if (!globalThis.crypto) globalThis.crypto = webcrypto;
+globalThis.crypto = webcrypto;
+global.crypto = webcrypto;
+console.log('🔐 Node version:', process.version);
+console.log('🔐 crypto.subtle available:', typeof globalThis.crypto.subtle !== 'undefined');
+console.log('🔐 MONGO_URI set:', !!process.env.MONGO_URI);
 
 const express = require('express');
 const cors = require('cors');
