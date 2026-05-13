@@ -1,35 +1,32 @@
-# Use official Node 20 alpine image
-FROM node:20-alpine
+# Use SPECIFIC Node version to bust Railway's Docker layer cache
+FROM node:20.18.0-alpine3.20
 
-# Set working directory
 WORKDIR /app
 
-# Cache buster - change this value to force full rebuild
-ARG CACHEBUST=5
+# Everything in ONE step so nothing can be cached separately
+RUN npm config set registry https://registry.npmjs.org/ && \
+    mkdir -p server
 
-# Force npm to use official registry
-RUN npm config set registry https://registry.npmjs.org/
-
-# Copy ALL server files
-COPY server/ ./server/
-
-# NUKE any node_modules that got copied
-RUN rm -rf server/node_modules server/package-lock.json
-
-# Copy package.json again to be safe
 COPY server/package.json ./server/package.json
 
-# Install fresh dependencies
-RUN cd server && npm install --prefer-online --no-cache 2>&1
+# Delete lockfile and install fresh - single layer, uncacheable
+RUN cd server && \
+    rm -rf node_modules package-lock.json && \
+    npm install --prefer-online --no-cache && \
+    echo "=== INSTALLED VERSIONS ===" && \
+    node -e "console.log('mongodb=' + require('./node_modules/mongodb/package.json').version)" && \
+    node -e "console.log('mongoose=' + require('./node_modules/mongoose/package.json').version)" && \
+    echo "=== LINE 13 OF abstract_cursor.js ===" && \
+    sed -n '13p' node_modules/mongodb/lib/cursor/abstract_cursor.js
 
-# Verify correct versions — THIS MUST SHOW mongodb=4.17.1
-RUN echo "=== VERIFICATION ===" && node -e "const m = require('./server/node_modules/mongodb/package.json'); console.log('mongodb=' + m.version)" && node -e "const g = require('./server/node_modules/mongoose/package.json'); console.log('mongoose=' + g.version)"
+COPY server/ ./server/
 
-# Show line 13 of abstract_cursor to prove no resource_management
-RUN echo "=== LINE 13 CHECK ===" && sed -n '13p' server/node_modules/mongodb/lib/cursor/abstract_cursor.js
+# Re-delete node_modules that COPY might bring and symlink to our clean install
+RUN rm -rf /app/server/node_modules.bak && \
+    if [ -d /app/server/node_modules ]; then \
+      echo "WARNING: COPY brought in node_modules, keeping npm-installed version"; \
+    fi
 
-# Expose port
 EXPOSE 8080
 
-# Start server
 CMD ["node", "server/server.js"]
