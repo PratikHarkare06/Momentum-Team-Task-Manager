@@ -4,11 +4,17 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files first (for better layer caching)
+# Force npm to use the official registry, not any Railway mirror
+RUN npm config set registry https://registry.npmjs.org/
+
+# Copy package files first
 COPY package.json ./
 
-# Install dependencies fresh — no cache, no corruption
-RUN npm install --no-cache
+# Install dependencies — force fresh from official registry
+RUN npm install --prefer-online --no-cache
+
+# Verify the mongodb version installed is correct
+RUN node -e "console.log('mongodb:', require('./node_modules/mongodb/package.json').version)"
 
 # Copy the rest of the server code
 COPY . .
