@@ -7,20 +7,20 @@ WORKDIR /app
 # Force npm to use official registry
 RUN npm config set registry https://registry.npmjs.org/
 
-# Copy server package.json from the server subdirectory
-COPY server/package.json ./
+# Copy server package.json
+COPY server/package.json ./server/
 
-# Fresh install from official registry
-RUN npm install --prefer-online --no-cache
+# Install dependencies fresh in server directory
+RUN cd server && npm install --prefer-online --no-cache
 
-# Copy all server source code
-COPY server/ ./
+# Copy all server source code into /app/server/
+COPY server/ ./server/
 
 # Verify installed versions
-RUN node -e "console.log('mongodb:', require('./node_modules/mongodb/package.json').version, '| mongoose:', require('./node_modules/mongoose/package.json').version)"
+RUN node -e "console.log('mongodb:', require('./server/node_modules/mongodb/package.json').version, '| mongoose:', require('./server/node_modules/mongoose/package.json').version)"
 
 # Expose port
 EXPOSE 8080
 
-# Start server
-CMD ["node", "server.js"]
+# Start server — matches Railway's expected path /app/server/server.js
+CMD ["node", "server/server.js"]
