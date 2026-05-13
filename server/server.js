@@ -1,5 +1,6 @@
-const crypto = require('crypto');
-if (!global.crypto) global.crypto = crypto;
+// Polyfill Web Crypto API for MongoDB SASL authentication (required on some Node environments)
+const { webcrypto } = require('crypto');
+if (!globalThis.crypto) globalThis.crypto = webcrypto;
 
 const express = require('express');
 const cors = require('cors');
