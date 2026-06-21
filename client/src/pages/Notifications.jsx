@@ -1,39 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, CheckSquare, AtSign, Clock, Package } from 'lucide-react';
+import { formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import toast from 'react-hot-toast';
+import api from '../services/api';
 
 const TABS = ['All', 'Unread', 'Mentions', 'Deadlines'];
 
-const NOTIFICATIONS = [
-  {
-    group: 'Today',
-    items: [
-      { icon: '👤', type: 'task', title: 'New Task Assigned', body: "You have been assigned to 'Implement OAuth2 Flow' by Sarah Chen.", tag: 'Project: Security Audit', time: '2m ago', unread: true },
-      { icon: '@', type: 'mention', title: 'Mentioned in Comments', body: "@Alex Rivera could you take a look at the latest Figma prototype for the dashboard?", tag: 'Task: UI Review', time: '45m ago', unread: true },
-      { icon: '⏰', type: 'deadline', title: 'Upcoming Deadline', body: "The 'API Documentation' task is due in 4 hours.", tag: 'Project: Backend V2', time: '2h ago', unread: true },
-    ]
-  },
-  {
-    group: 'Yesterday',
-    items: [
-      { icon: '👤', type: 'task', title: 'Project Invitation', body: "You were added to the 'Mobile App Redesign' workspace.", tag: 'Momentum Workspace', time: 'Yesterday', unread: false },
-    ]
-  }
-];
+const iconMap = {
+  task: <CheckSquare size={16} />,
+  mention: <AtSign size={16} />,
+  deadline: <Clock size={16} />,
+  system: <Bell size={16} />,
+};
 
-const iconColors = { task: '#22C55E', mention: '#E5484D', deadline: '#F59E0B' };
+const iconColors = { task: '#22C55E', mention: '#E5484D', deadline: '#F59E0B', system: '#3B82F6' };
 
 export default function Notifications() {
   const [tab, setTab] = useState('All');
   const [search, setSearch] = useState('');
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const groups = NOTIFICATIONS.map(g => ({
-    ...g,
-    items: g.items.filter(n => {
-      const matchTab = tab === 'All' || (tab === 'Unread' && n.unread) || (tab === 'Mentions' && n.type === 'mention') || (tab === 'Deadlines' && n.type === 'deadline');
-      const matchSearch = !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.body.toLowerCase().includes(search.toLowerCase());
-      return matchTab && matchSearch;
-    })
-  })).filter(g => g.items.length > 0);
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await api.get('/notifications');
+      if (res.data?.success) {
+        setNotifications(res.data.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await api.put('/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      toast.success('All marked as read');
+    } catch (error) {
+      toast.error('Failed to mark as read');
+    }
+  };
+
+  const markAsRead = async (id, isRead) => {
+    if (isRead) return;
+    try {
+      await api.put(`/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Group notifications by date (Today, Yesterday, Older)
+  const groupedNotifications = () => {
+    const groups = { 'Today': [], 'Yesterday': [], 'Older': [] };
+    
+    notifications.forEach(n => {
+      const date = new Date(n.createdAt);
+      const timeStr = formatDistanceToNow(date, { addSuffix: true });
+      const item = { ...n, time: timeStr, unread: !n.isRead };
+      
+      // Filtering logic
+      const matchTab = tab === 'All' || (tab === 'Unread' && item.unread) || (tab === 'Mentions' && item.type === 'mention') || (tab === 'Deadlines' && item.type === 'deadline');
+      const matchSearch = !search || item.title.toLowerCase().includes(search.toLowerCase()) || item.body.toLowerCase().includes(search.toLowerCase());
+      
+      if (matchTab && matchSearch) {
+        if (isToday(date)) groups['Today'].push(item);
+        else if (isYesterday(date)) groups['Yesterday'].push(item);
+        else groups['Older'].push(item);
+      }
+    });
+
+    return [
+      { group: 'Today', items: groups['Today'] },
+      { group: 'Yesterday', items: groups['Yesterday'] },
+      { group: 'Older', items: groups['Older'] }
+    ].filter(g => g.items.length > 0);
+  };
+
+  const groups = groupedNotifications();
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto' }}>
@@ -41,7 +93,7 @@ export default function Notifications() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div className="page-title">Notifications</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button className="btn btn-ghost btn-sm link">Mark all as read</button>
+          <button className="btn btn-ghost btn-sm link" onClick={markAllAsRead}>Mark all as read</button>
           <div className="search-box">
             <Bell size={14} />
             <input placeholder="Search alerts..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -57,7 +109,9 @@ export default function Notifications() {
       </div>
 
       {/* Notification groups */}
-      {groups.length === 0 ? (
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-3)' }}>Loading notifications...</div>
+      ) : groups.length === 0 ? (
         <div className="empty-state">
           <Bell size={36} style={{ margin: '0 auto' }} />
           <h3>All caught up!</h3>
@@ -67,24 +121,25 @@ export default function Notifications() {
         <div key={g.group} style={{ marginBottom: 28 }}>
           <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-3)', marginBottom: 12 }}>{g.group}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {g.items.map((n, i) => (
-              <div key={i} className="card" style={{
+            {g.items.map((n) => (
+              <div key={n._id} className="card" style={{
                 borderRadius: 12, position: 'relative',
                 borderLeft: n.unread ? '3px solid var(--accent)' : '3px solid transparent',
-                transition: 'box-shadow .15s'
+                transition: 'box-shadow .15s', cursor: 'pointer'
               }}
                 onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow-md)'}
                 onMouseLeave={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
+                onClick={() => markAsRead(n._id, n.isRead)}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                   {/* Icon */}
                   <div style={{
                     width: 38, height: 38, borderRadius: '50%',
-                    background: `${iconColors[n.type]}22`,
+                    background: `${iconColors[n.type] || '#888'}22`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, fontSize: '1rem'
+                    flexShrink: 0, color: iconColors[n.type] || '#888'
                   }}>
-                    {n.icon}
+                    {iconMap[n.type] || <Bell size={16} />}
                   </div>
 
                   <div style={{ flex: 1 }}>

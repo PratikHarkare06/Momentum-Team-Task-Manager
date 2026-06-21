@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
+import api from '../services/api';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import {
@@ -31,10 +34,37 @@ export default function AppLayout() {
     () => localStorage.getItem('theme-dark') === 'true'
   );
 
+  const [unreadCount, setUnreadCount] = useState(0);
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
     localStorage.setItem('theme-dark', String(darkMode));
   }, [darkMode]);
+
+  useEffect(() => {
+    if (!user?._id) return;
+
+    // Fetch initial unread count
+    api.get('/notifications').then(res => {
+      if (res.data?.success) {
+        setUnreadCount(res.data.data.filter(n => !n.isRead).length);
+      }
+    }).catch(() => {});
+
+    const socketUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api', '');
+    const socket = io(socketUrl);
+
+    socket.emit('join_user_room', user._id);
+
+    socket.on('new_notification', (notification) => {
+      setUnreadCount(prev => prev + 1);
+      toast(notification.title, { icon: '🔔' });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user]);
 
   const handleLogout = () => { dispatch(logout()); navigate('/login'); };
 
@@ -130,9 +160,19 @@ export default function AppLayout() {
             to="/notifications"
             title={collapsed ? 'Notifications' : undefined}
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-            style={collapsed ? { justifyContent: 'center', padding: '10px 0' } : {}}
+            style={collapsed ? { justifyContent: 'center', padding: '10px 0', position: 'relative' } : { position: 'relative' }}
           >
             <Bell size={17} />
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute', top: 8, left: collapsed ? 34 : 26,
+                background: 'var(--accent)', color: 'white', fontSize: '0.6rem',
+                fontWeight: 700, borderRadius: '50%', padding: '0 4px', minWidth: 16, height: 16,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
             {!collapsed && <span>Notifications</span>}
           </NavLink>
 
@@ -209,8 +249,14 @@ export default function AppLayout() {
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            <button className="icon-btn" onClick={() => navigate('/notifications')}>
+            <button className="icon-btn" onClick={() => navigate('/notifications')} style={{ position: 'relative' }}>
               <Bell size={16} />
+              {unreadCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: 2, right: 2,
+                  background: 'var(--accent)', width: 8, height: 8, borderRadius: '50%'
+                }} />
+              )}
             </button>
 
             <div

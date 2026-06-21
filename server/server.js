@@ -34,6 +34,12 @@ app.set('io', io);
 
 io.on('connection', (socket) => {
   console.log('A user connected via WebSocket', socket.id);
+  
+  socket.on('join_user_room', (userId) => {
+    socket.join(userId);
+    console.log(`User ${socket.id} joined room ${userId}`);
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected', socket.id);
   });
@@ -94,6 +100,7 @@ app.use('/api/projects', require('./routes/projects'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // Health check
 app.get('/health', (req, res) => {

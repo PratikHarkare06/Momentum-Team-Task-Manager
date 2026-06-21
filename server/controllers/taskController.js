@@ -1,5 +1,6 @@
 const Task = require('../models/Task');
 const Project = require('../models/Project');
+const Notification = require('../models/Notification');
 
 // @desc    Create task
 // @route   POST /api/tasks
@@ -27,6 +28,21 @@ const createTask = async (req, res) => {
     });
 
     await task.populate('assignedTo createdBy', 'name email');
+    
+    // Emit notification if assigned to someone else
+    if (assignedTo && assignedTo.toString() !== req.user._id.toString()) {
+      const notification = await Notification.create({
+        recipient: assignedTo,
+        type: 'task',
+        title: 'New Task Assigned',
+        body: `You have been assigned to '${task.title}' by ${req.user.name}.`,
+        tag: `Project: ${project.title}`,
+        relatedId: task._id
+      });
+      const io = req.app.get('io');
+      io.to(assignedTo.toString()).emit('new_notification', notification);
+    }
+
     res.status(201).json({ success: true, task });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -95,6 +111,21 @@ const updateTask = async (req, res) => {
 
     await task.save();
     await task.populate('assignedTo createdBy', 'name email');
+    await task.populate('projectId', 'title');
+
+    // Handle re-assignment notification
+    if (assignedTo !== undefined && assignedTo !== null && assignedTo.toString() !== req.user._id.toString()) {
+      const notification = await Notification.create({
+        recipient: assignedTo,
+        type: 'task',
+        title: 'Task Re-assigned',
+        body: `You have been assigned to '${task.title}' by ${req.user.name}.`,
+        tag: `Project: ${task.projectId?.title || 'General'}`,
+        relatedId: task._id
+      });
+      const io = req.app.get('io');
+      io.to(assignedTo.toString()).emit('new_notification', notification);
+    }
 
     res.json({ success: true, task });
   } catch (error) {
