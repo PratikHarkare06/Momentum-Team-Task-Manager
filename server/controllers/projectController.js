@@ -21,6 +21,25 @@ const createProject = async (req, res) => {
     });
 
     await project.populate('createdBy', 'name email');
+
+    // Notify the creator that the project was created successfully
+    try {
+      const io = req.app.get('io');
+      const notification = await Notification.create({
+        recipient: req.user._id,
+        type: 'system',
+        title: 'Project Created',
+        body: `You successfully created the project '${project.title}'.`,
+        relatedEntity: project._id,
+        relatedModel: 'Project'
+      });
+      if (io) {
+        io.to(req.user._id.toString()).emit('new_notification', notification);
+      }
+    } catch (notifErr) {
+      console.error('Failed to send project creation notification', notifErr);
+    }
+
     res.status(201).json({ success: true, project });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
