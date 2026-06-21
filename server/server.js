@@ -12,12 +12,32 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const path = require('path');
 dotenv.config({ path: path.join(__dirname, '.env') });
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+
+// Socket.io setup
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  console.log('A user connected via WebSocket', socket.id);
+  socket.on('disconnect', () => {
+    console.log('User disconnected', socket.id);
+  });
+});
 
 // Security middleware
 // Disable Helmet's cross-origin policies that block API access via Vite proxy
@@ -39,9 +59,10 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      // Allow localhost and any Vercel/Netlify/Render deployment
+      // Allow any localhost and any Vercel/Netlify/Render deployment
       if (
         allowedOrigins.includes(origin) ||
+        /^http:\/\/localhost:\d+$/.test(origin) ||
         /\.vercel\.app$/.test(origin) ||
         /\.netlify\.app$/.test(origin) ||
         /\.onrender\.com$/.test(origin) ||
@@ -94,6 +115,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

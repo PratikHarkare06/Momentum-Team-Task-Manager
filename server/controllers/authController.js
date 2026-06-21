@@ -143,4 +143,47 @@ const getUsers = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, getMe, getUsers, firebaseAuth };
+const inviteUser = async (req, res) => {
+  try {
+    const { email, role } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({ success: false, message: 'User already exists' });
+    }
+
+    const userName = email.split('@')[0];
+    const validRole = role === 'admin' ? 'admin' : 'member';
+    
+    user = await User.create({
+      name: userName,
+      email,
+      password: `invite_${Math.random().toString(36).slice(2)}`,
+      role: validRole,
+    });
+
+    const userObj = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    };
+
+    // Emit real-time event to all connected clients
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('member_added', userObj);
+    }
+
+    res.status(201).json({ success: true, user: userObj });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { signup, login, getMe, getUsers, firebaseAuth, inviteUser };

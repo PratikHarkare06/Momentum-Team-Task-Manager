@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
+import { io } from 'socket.io-client';
 import { Plus, Search, MoreHorizontal, Users, Activity, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -24,6 +25,7 @@ export default function Team() {
   const [inviteRole, setInviteRole] = useState('member');
 
   useEffect(() => {
+    // Fetch initial users
     api.get('/users').then(r => {
       if (r.data?.users?.length) setMembers(r.data.users.map((u, i) => ({
         name: u.name || 'User', email: u.email, role: u.role === 'admin' ? 'Admin' : 'Member',
@@ -31,6 +33,29 @@ export default function Team() {
         online: Math.random() > 0.4, tasks: Math.floor(Math.random() * 20 + 1), activity: ['High', 'Normal', 'Low'][i % 3],
       })));
     }).catch(() => {});
+
+    // Set up WebSocket connection for real-time updates
+    const socketUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace('/api', '');
+    const socket = io(socketUrl);
+
+    socket.on('member_added', (newUser) => {
+      const formattedUser = {
+        name: newUser.name || 'User',
+        email: newUser.email,
+        role: newUser.role === 'admin' ? 'Admin' : 'Member',
+        joined: new Date(newUser.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        online: true, // newly added users are shown as online
+        tasks: 0,
+        activity: 'New',
+      };
+      
+      setMembers(prev => [formattedUser, ...prev]);
+      toast.success(`${formattedUser.name} joined the team!`);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const filtered = members.filter(m => {
@@ -41,9 +66,14 @@ export default function Team() {
 
   const handleInvite = async (e) => {
     e.preventDefault();
-    toast.success(`Invitation sent to ${inviteEmail}`);
-    setShowInvite(false);
-    setInviteEmail('');
+    try {
+      await api.post('/users/invite', { email: inviteEmail, role: inviteRole });
+      toast.success(`Invitation sent to ${inviteEmail}`);
+      setShowInvite(false);
+      setInviteEmail('');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send invitation');
+    }
   };
 
   return (
