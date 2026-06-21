@@ -29,18 +29,32 @@ const createTask = async (req, res) => {
 
     await task.populate('assignedTo createdBy', 'name email');
     
-    // Emit notification if assigned to someone else
-    if (assignedTo && assignedTo.toString() !== req.user._id.toString()) {
-      const notification = await Notification.create({
-        recipient: assignedTo,
+    // Broadcast notification to all project members
+    try {
+      const membersToNotify = project.members.filter(m => m.toString() !== req.user._id.toString());
+      const io = req.app.get('io');
+      
+      const notifications = membersToNotify.map(m => ({
+        recipient: m,
         type: 'task',
-        title: 'New Task Assigned',
-        body: `You have been assigned to '${task.title}' by ${req.user.name}.`,
+        title: 'New Task Created',
+        body: `A new task '${task.title}' was added to project '${project.title}' by ${req.user.name}.`,
         tag: `Project: ${project.title}`,
         relatedId: task._id
-      });
-      const io = req.app.get('io');
-      io.to(assignedTo.toString()).emit('new_notification', notification);
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+        if (io) {
+          membersToNotify.forEach(m => io.to(m.toString()).emit('new_notification', {
+            title: 'New Task Created',
+            body: `A new task '${task.title}' was added to project '${project.title}' by ${req.user.name}.`,
+            type: 'task'
+          }));
+        }
+      }
+    } catch (notifErr) {
+      console.error('Failed to broadcast task creation', notifErr);
     }
 
     res.status(201).json({ success: true, task });
@@ -112,34 +126,35 @@ const updateTask = async (req, res) => {
 
     await task.save();
     await task.populate('assignedTo createdBy', 'name email');
-    await task.populate('projectId', 'title');
+    await task.populate('projectId', 'title members');
 
-    // Handle re-assignment notification
-    const io = req.app.get('io');
-    
-    if (assignedTo !== undefined && assignedTo !== null && assignedTo.toString() !== req.user._id.toString()) {
-      const notification = await Notification.create({
-        recipient: assignedTo,
-        type: 'task',
-        title: 'Task Re-assigned',
-        body: `You have been assigned to '${task.title}' by ${req.user.name}.`,
-        tag: `Project: ${task.projectId?.title || 'General'}`,
-        relatedId: task._id
-      });
-      if (io) io.to(assignedTo.toString()).emit('new_notification', notification);
-    }
+    // Broadcast notification to all project members on update
+    try {
+      const project = task.projectId;
+      const membersToNotify = (project.members || []).filter(m => m.toString() !== req.user._id.toString());
+      const io = req.app.get('io');
 
-    // Handle completed task notification
-    if (status === 'completed' && oldStatus !== 'completed' && task.createdBy && task.createdBy._id.toString() !== req.user._id.toString()) {
-      const notification = await Notification.create({
-        recipient: task.createdBy._id,
+      const notifications = membersToNotify.map(m => ({
+        recipient: m,
         type: 'task',
-        title: 'Task Completed',
-        body: `The task '${task.title}' was marked as completed by ${req.user.name}.`,
-        tag: `Project: ${task.projectId?.title || 'General'}`,
+        title: 'Task Updated',
+        body: `Task '${task.title}' was updated by ${req.user.name}.`,
+        tag: `Project: ${project.title || 'General'}`,
         relatedId: task._id
-      });
-      if (io) io.to(task.createdBy._id.toString()).emit('new_notification', notification);
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+        if (io) {
+          membersToNotify.forEach(m => io.to(m.toString()).emit('new_notification', {
+            title: 'Task Updated',
+            body: `Task '${task.title}' was updated by ${req.user.name}.`,
+            type: 'task'
+          }));
+        }
+      }
+    } catch (notifErr) {
+      console.error('Failed to broadcast task update', notifErr);
     }
 
     res.json({ success: true, task });
@@ -153,7 +168,7 @@ const updateTask = async (req, res) => {
 // @access  Private
 const deleteTask = async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id);
+    const task = await Task.findById(req.params.id).populate('projectId', 'title members');
     if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
 
     const isCreator = task.createdBy.toString() === req.user._id.toString();
@@ -161,7 +176,38 @@ const deleteTask = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to delete this task' });
     }
 
+    const project = task.projectId;
     await task.deleteOne();
+
+    // Broadcast deletion to all project members
+    try {
+      if (project && project.members) {
+        const membersToNotify = project.members.filter(m => m.toString() !== req.user._id.toString());
+        const io = req.app.get('io');
+
+        const notifications = membersToNotify.map(m => ({
+          recipient: m,
+          type: 'task',
+          title: 'Task Deleted',
+          body: `Task '${task.title}' was deleted by ${req.user.name}.`,
+          tag: `Project: ${project.title}`
+        }));
+
+        if (notifications.length > 0) {
+          await Notification.insertMany(notifications);
+          if (io) {
+            membersToNotify.forEach(m => io.to(m.toString()).emit('new_notification', {
+              title: 'Task Deleted',
+              body: `Task '${task.title}' was deleted by ${req.user.name}.`,
+              type: 'task'
+            }));
+          }
+        }
+      }
+    } catch (notifErr) {
+      console.error('Failed to broadcast task deletion', notifErr);
+    }
+
     res.json({ success: true, message: 'Task deleted' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

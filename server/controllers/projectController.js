@@ -1,6 +1,7 @@
 const Project = require('../models/Project');
 const Task = require('../models/Task');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 // @desc    Create project
 // @route   POST /api/projects
@@ -22,22 +23,32 @@ const createProject = async (req, res) => {
 
     await project.populate('createdBy', 'name email');
 
-    // Notify the creator that the project was created successfully
+    // Notify ALL users in the system that a new project was created
     try {
+      const users = await User.find({ _id: { $ne: req.user._id } }).select('_id');
       const io = req.app.get('io');
-      const notification = await Notification.create({
-        recipient: req.user._id,
+      
+      const notifications = users.map(u => ({
+        recipient: u._id,
         type: 'system',
-        title: 'Project Created',
-        body: `You successfully created the project '${project.title}'.`,
+        title: 'New Project Created',
+        body: `A new project '${project.title}' was created by ${req.user.name}.`,
         relatedEntity: project._id,
         relatedModel: 'Project'
-      });
-      if (io) {
-        io.to(req.user._id.toString()).emit('new_notification', notification);
+      }));
+      
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+        if (io) {
+          users.forEach(u => io.to(u._id.toString()).emit('new_notification', {
+            title: 'New Project Created',
+            body: `A new project '${project.title}' was created by ${req.user.name}.`,
+            type: 'system'
+          }));
+        }
       }
     } catch (notifErr) {
-      console.error('Failed to send project creation notification', notifErr);
+      console.error('Failed to broadcast project creation', notifErr);
     }
 
     res.status(201).json({ success: true, project });
@@ -109,6 +120,34 @@ const updateProject = async (req, res) => {
     await project.save();
     await project.populate('createdBy members admins', 'name email role');
 
+    // Notify all members about project update
+    try {
+      const membersToNotify = project.members.filter(m => m._id.toString() !== req.user._id.toString());
+      const io = req.app.get('io');
+      
+      const notifications = membersToNotify.map(m => ({
+        recipient: m._id,
+        type: 'system',
+        title: 'Project Updated',
+        body: `Project '${project.title}' was updated by ${req.user.name}.`,
+        relatedEntity: project._id,
+        relatedModel: 'Project'
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+        if (io) {
+          membersToNotify.forEach(m => io.to(m._id.toString()).emit('new_notification', {
+            title: 'Project Updated',
+            body: `Project '${project.title}' was updated by ${req.user.name}.`,
+            type: 'system'
+          }));
+        }
+      }
+    } catch (notifErr) {
+      console.error('Failed to broadcast project update', notifErr);
+    }
+
     res.json({ success: true, project });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -130,6 +169,32 @@ const deleteProject = async (req, res) => {
 
     await Task.deleteMany({ projectId: project._id });
     await project.deleteOne();
+
+    // Notify all members about project deletion
+    try {
+      const membersToNotify = project.members.filter(m => m.toString() !== req.user._id.toString());
+      const io = req.app.get('io');
+      
+      const notifications = membersToNotify.map(m => ({
+        recipient: m,
+        type: 'system',
+        title: 'Project Deleted',
+        body: `Project '${project.title}' was deleted by ${req.user.name}.`
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+        if (io) {
+          membersToNotify.forEach(m => io.to(m.toString()).emit('new_notification', {
+            title: 'Project Deleted',
+            body: `Project '${project.title}' was deleted by ${req.user.name}.`,
+            type: 'system'
+          }));
+        }
+      }
+    } catch (notifErr) {
+      console.error('Failed to broadcast project deletion', notifErr);
+    }
 
     res.json({ success: true, message: 'Project and its tasks deleted' });
   } catch (error) {
