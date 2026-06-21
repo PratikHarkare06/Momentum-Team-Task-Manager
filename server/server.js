@@ -20,6 +20,7 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 connectDB();
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (Railway)
 const server = http.createServer(app);
 
 // Socket.io setup
