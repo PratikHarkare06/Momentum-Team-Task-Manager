@@ -1,5 +1,6 @@
 const Project = require('../models/Project');
 const Task = require('../models/Task');
+const Notification = require('../models/Notification');
 
 // @desc    Create project
 // @route   POST /api/projects
@@ -139,6 +140,24 @@ const addMember = async (req, res) => {
     await project.save();
     await project.populate('members', 'name email role');
 
+    // Create Notification for the added user
+    try {
+      const io = req.app.get('io');
+      const notification = await Notification.create({
+        recipient: userId,
+        type: 'system',
+        title: 'Added to Project',
+        body: `You were added to the project '${project.title}' by ${req.user.name || 'an admin'}.`,
+        relatedEntity: project._id,
+        relatedModel: 'Project'
+      });
+      if (io) {
+        io.to(userId.toString()).emit('new_notification', notification);
+      }
+    } catch (notifErr) {
+      console.error('Failed to send project invite notification', notifErr);
+    }
+
     res.json({ success: true, project });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -161,6 +180,22 @@ const removeMember = async (req, res) => {
     project.members = project.members.filter((m) => m.toString() !== req.params.userId);
     project.admins = project.admins.filter((a) => a.toString() !== req.params.userId);
     await project.save();
+
+    // Notify removed user
+    try {
+      const io = req.app.get('io');
+      const notification = await Notification.create({
+        recipient: req.params.userId,
+        type: 'system',
+        title: 'Removed from Project',
+        body: `You were removed from the project '${project.title}' by ${req.user.name || 'an admin'}.`,
+        relatedEntity: project._id,
+        relatedModel: 'Project'
+      });
+      if (io) io.to(req.params.userId).emit('new_notification', notification);
+    } catch (notifErr) {
+      console.error('Failed to send project removal notification', notifErr);
+    }
 
     res.json({ success: true, message: 'Member removed' });
   } catch (error) {

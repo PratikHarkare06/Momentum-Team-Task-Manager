@@ -5,6 +5,7 @@ import { fetchTasks, createTask, updateTask, deleteTask } from '../redux/slices/
 import { fetchProjects } from '../redux/slices/projectsSlice';
 import { Plus, Search, Download, MoreHorizontal, Trash2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 /* ── Smart Portal Menu ───────────────────────────────────────────────────────
    Renders into document.body. Flips above the button if not enough space below.
@@ -82,14 +83,18 @@ export default function Tasks() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', projectId: '', assignee: '' });
+  const [form, setForm] = useState({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', projectId: '', assignedTo: '' });
   const [creating, setCreating] = useState(false);
   const [menuId, setMenuId]         = useState(null);
+  const [users, setUsers] = useState([]);
   const menuBtnRefs                  = useRef({});
 
   useEffect(() => {
     dispatch(fetchTasks());
     dispatch(fetchProjects());
+    api.get('/users').then(res => {
+      if (res.data?.users) setUsers(res.data.users);
+    }).catch(() => {});
   }, [dispatch]);
 
   const filtered = (tasks || []).filter(t => {
@@ -106,7 +111,7 @@ export default function Tasks() {
       await dispatch(createTask(form)).unwrap();
       toast.success('Task created!');
       setShowModal(false);
-      setForm({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', project: '', assignee: '' });
+      setForm({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', projectId: '', assignedTo: '' });
     } catch (err) { toast.error(err || 'Failed'); }
     finally { setCreating(false); }
   };
@@ -321,6 +326,13 @@ export default function Tasks() {
                     </select>
                   </div>
                   <div className="form-group">
+                    <label className="form-label">Assignee</label>
+                    <select className="form-select" value={form.assignedTo} onChange={e => setForm({ ...form, assignedTo: e.target.value })}>
+                      <option value="">Unassigned</option>
+                      {users.map(u => <option key={u._id} value={u._id}>{u.name || u.email}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ gridColumn: '1/-1' }}>
                     <label className="form-label">Due Date</label>
                     <input className="form-input" type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
                   </div>

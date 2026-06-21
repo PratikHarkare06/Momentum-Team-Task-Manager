@@ -5,6 +5,7 @@ import { fetchProjects } from '../redux/slices/projectsSlice';
 import { fetchTasks, createTask, updateTask } from '../redux/slices/tasksSlice';
 import { Plus, Search, ArrowLeft, MoreHorizontal, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 const COLUMNS = ['Todo', 'In Progress', 'Completed'];
 const PRIORITIES = ['High', 'Medium', 'Low'];
@@ -28,13 +29,17 @@ export default function ProjectDetails() {
 
   const [view, setView] = useState('Board');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '' });
+  const [form, setForm] = useState({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', assignedTo: '' });
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState('');
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     dispatch(fetchProjects());
     dispatch(fetchTasks());
+    api.get('/users').then(res => {
+      if (res.data?.users) setUsers(res.data.users);
+    }).catch(() => {});
   }, [dispatch]);
 
   const project = (projects || []).find(p => p._id === id);
@@ -48,7 +53,7 @@ export default function ProjectDetails() {
       await dispatch(createTask({ ...form, projectId: id })).unwrap();
       toast.success('Task added!');
       setShowModal(false);
-      setForm({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '' });
+      setForm({ title: '', description: '', priority: 'Medium', status: 'Todo', dueDate: '', assignedTo: '' });
     } catch { toast.error('Failed to create task'); }
     finally { setCreating(false); }
   };
@@ -207,7 +212,14 @@ export default function ProjectDetails() {
                       {COLUMNS.map(s => <option key={s}>{s}</option>)}
                     </select>
                   </div>
-                  <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                  <div className="form-group">
+                    <label className="form-label">Assignee</label>
+                    <select className="form-select" value={form.assignedTo} onChange={e => setForm({ ...form, assignedTo: e.target.value })}>
+                      <option value="">Unassigned</option>
+                      {users.map(u => <option key={u._id} value={u._id}>{u.name || u.email}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
                     <label className="form-label">Due Date</label>
                     <input className="form-input" type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} />
                   </div>

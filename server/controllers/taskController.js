@@ -99,6 +99,7 @@ const updateTask = async (req, res) => {
     const task = await Task.findById(req.params.id);
     if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
 
+    const oldStatus = task.status;
     let { title, description, assignedTo, status, priority, dueDate } = req.body;
     if (status) status = status.toLowerCase().replace(' ', '-');
     if (priority) priority = priority.toLowerCase();
@@ -114,6 +115,8 @@ const updateTask = async (req, res) => {
     await task.populate('projectId', 'title');
 
     // Handle re-assignment notification
+    const io = req.app.get('io');
+    
     if (assignedTo !== undefined && assignedTo !== null && assignedTo.toString() !== req.user._id.toString()) {
       const notification = await Notification.create({
         recipient: assignedTo,
@@ -123,8 +126,20 @@ const updateTask = async (req, res) => {
         tag: `Project: ${task.projectId?.title || 'General'}`,
         relatedId: task._id
       });
-      const io = req.app.get('io');
-      io.to(assignedTo.toString()).emit('new_notification', notification);
+      if (io) io.to(assignedTo.toString()).emit('new_notification', notification);
+    }
+
+    // Handle completed task notification
+    if (status === 'completed' && oldStatus !== 'completed' && task.createdBy && task.createdBy._id.toString() !== req.user._id.toString()) {
+      const notification = await Notification.create({
+        recipient: task.createdBy._id,
+        type: 'task',
+        title: 'Task Completed',
+        body: `The task '${task.title}' was marked as completed by ${req.user.name}.`,
+        tag: `Project: ${task.projectId?.title || 'General'}`,
+        relatedId: task._id
+      });
+      if (io) io.to(task.createdBy._id.toString()).emit('new_notification', notification);
     }
 
     res.json({ success: true, task });
